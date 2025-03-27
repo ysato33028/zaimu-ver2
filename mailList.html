@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>担当者管理画面</title>
+  <link rel="stylesheet" href="CSS/style.css">
+  <link rel="stylesheet" href="CSS/header.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script> <!-- xlsxライブラリ -->
+</head>
+<body>
+  <header class="header-3">
+    <div class="header-inner">
+      <div class="logo">
+        <h1>まいばすけっと既存店PLアプリ</h1>
+      </div>
+      <nav class="header-nav">
+        <div class="header-nav-item">
+          <a class="header-button header-post" href="shopDB.html" target="_blank">店舗DB</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <section>
+      <h2>担当者一覧のアップロード</h2>
+      <input type="file" id="file-upload" accept=".xlsx, .xls">
+      <button id="upload-button" onclick="uploadExcel()">アップロード</button><br>
+      <div id="progress-container" style="display:none; width: 100%; background-color: #f3f3f3; border-radius: 10px; height: 5px; margin-top: 10px;">
+          <div id="progress-bar" style="width: 0%; height: 100%; background-color: #00aec9; border-radius: 10px;"></div>
+      </div>
+    </section>
+    <section>
+      <h2>担当者一覧</h2>
+      <p>現在の店舗数: <span id="total-count"></span></p>
+      <button id="send-button">一斉送信</button> 
+      <table>
+        <thead>
+          <tr>
+            <th>店名</th>
+            <th>ゾーン</th>
+            <th>エリア</th>
+            <th>店舗責任者</th>
+            <th>社員番号</th>
+            <th>メールアドレス</th>
+            <th>パスワード</th>
+          </tr>
+        </thead>
+        <tbody id="store-list">
+          <!-- 店舗データがここに挿入されます -->
+        </tbody>
+      </table>
+      
+    </section>
+  </main>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, setDoc, doc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+// Firebaseの初期化
+const firebaseConfig = {
+  apiKey: "AIzaSyAtBYcqb7uEMK7r0O0Q6l3LNZAow29-ZzI",
+  authDomain: "test-969a3.firebaseapp.com",
+  projectId: "test-969a3",
+  storageBucket: "test-969a3.firebasestorage.app",
+  messagingSenderId: "370599779966",
+  appId: "1:370599779966:web:53792e9cf604cf09b4022f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Firestoreからデータを読み込み
+async function loadStores() {
+  const storeList = document.getElementById("store-list");
+  const totalCountSpan = document.getElementById("total-count"); // 店舗総数を表示
+  storeList.innerHTML = ""; // テーブルのリセット
+  const querySnapshot = await getDocs(collection(db, "mailDB"));
+
+  // フィルタリング後の総数を表示
+  const totalStores = querySnapshot.size;
+  totalCountSpan.textContent = Math.round(totalStores).toLocaleString();
+
+  // テーブルを更新
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${data["店名"] || "-"}</td>
+      <td>${data["ゾーン"] || "-"}</td>
+      <td>${data["エリア"] || "-"}</td>
+      <td>${data["店舗責任者"] || "-"}</td>
+      <td>${data["社員番号"] || "-"}</td>
+      <td>${data["メールアドレス"] || "-"}</td>
+      <td>${data["パスワード"] || "-"}</td>
+    `;
+
+    storeList.appendChild(row);
+  });
+
+}
+
+// ページロード時にデータを読み込む
+document.addEventListener("DOMContentLoaded", () => {
+  loadStores();
+});
+
+// キーを整形する関数
+function cleanFieldName(name) {
+    return name.replace(/\s+/g, "").replace(/↵/g, "").replace(/"/g, "");
+}
+
+// データのキーを整形する関数
+function cleanDataKeys(data) {
+    const cleanedData = {};
+    Object.keys(data).forEach((key) => {
+        const cleanKey = cleanFieldName(key);
+        cleanedData[cleanKey] = data[key];
+    });
+    return cleanedData;
+}
+
+// ランダムなパスワードを生成する関数
+function generateRandomPassword(length = 8) {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+}
+
+// エクセルファイルをアップロードしてFirebaseに登録する関数
+async function uploadExcel() {
+    const fileInput = document.getElementById("file-upload");
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("エクセルファイルを選択してください。");
+        return;
+    }
+
+    const progressContainer = document.getElementById("progress-container");
+    const progressBar = document.getElementById("progress-bar");
+    progressContainer.style.display = "block";
+    progressBar.style.width = "0%";
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+        const dbRef = collection(db, "mailDB");
+
+        // Firestoreの現在のデータを取得
+        const querySnapshot = await getDocs(dbRef);
+        const existingDocs = new Set();
+        querySnapshot.forEach((doc) => {
+            existingDocs.add(doc.id);
+        });
+
+        const totalRows = jsonData.length;
+        let uploadedRows = 0;
+        const passwordCache = {};
+
+        // ExcelのデータをFirestoreに同期
+        const newDocIds = new Set();
+
+        for (const row of jsonData) {
+            const cleanedRow = cleanDataKeys(row);
+            const storeName = cleanedRow["店名"];
+            const email = cleanedRow["メールアドレス"];
+
+            if (!storeName || !email) {
+                console.warn("店名またはメールアドレスが欠落しているためスキップ:", cleanedRow);
+                continue;
+            }
+
+            let password = passwordCache[email];
+            if (!password) {
+                password = generateRandomPassword();
+                passwordCache[email] = password;
+            }
+            cleanedRow["パスワード"] = password;
+
+            const docId = `${email}_${storeName}`;
+            newDocIds.add(docId);
+
+            try {
+                await setDoc(doc(db, "mailDB", docId), cleanedRow);
+                console.log("データ追加/更新:", cleanedRow);
+                uploadedRows++;
+            } catch (error) {
+                console.error("データ追加/更新エラー: ", error);
+            }
+
+            const progress = (uploadedRows / totalRows) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+        // FirestoreにあってExcelにないデータを削除
+        const docsToDelete = [...existingDocs].filter(docId => !newDocIds.has(docId));
+        for (const docId of docsToDelete) {
+            await deleteDoc(doc(db, "mailDB", docId));
+            console.log(`不要なデータを削除: ${docId}`);
+        }
+
+        alert("データが正常に同期されました！");
+        progressContainer.style.display = "none";
+        loadStores();
+        
+    };
+    reader.readAsArrayBuffer(file);
+}
+window.uploadExcel = uploadExcel;
+
+// Firestoreからメールアドレスを読み込む
+async function getEmailAddresses() {
+  const emailAddresses = [];
+  const querySnapshot = await getDocs(collection(db, "mailDB"));
+
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    if (data["メールアドレス"]) {
+      emailAddresses.push(data["メールアドレス"]);
+    }
+  });
+
+  return emailAddresses;
+}
+
+// SendGridを使って一斉メール送信
+async function sendBulkEmail() {
+  const emailAddresses = await getEmailAddresses();  // Firestoreから取得したメールアドレスを使用
+
+  const msg = {
+    personalizations: [{
+      to: emailAddresses.map(email => ({ email })),  // メールアドレスの配列を整形
+      subject: '通知: 既存店DBの更新',
+      content: [{
+        type: 'text/plain',
+        value: '既存店DBの更新が完了しました。新しい情報をご確認ください。',
+      }],
+    }],
+    from: { email: 'your-email@example.com' },  // 送信元のメールアドレス
+  };
+
+  try {
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer YOUR_SENDGRID_API_KEY',  // SendGrid APIキー
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(msg),
+    });
+
+    if (response.ok) {
+      alert('メールが正常に送信されました！');
+    } else {
+      alert('メール送信に失敗しました。');
+    }
+  } catch (error) {
+    console.error('メール送信エラー:', error);
+    alert('エラーが発生しました。');
+  }
+}
+
+// メール送信ボタンのクリックイベント
+document.getElementById('send-button').addEventListener('click', () => {
+  sendBulkEmail();
+});
+</script>
+
+</script>
+<!-- Excel用SheetJSのライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+</body>
+</html>

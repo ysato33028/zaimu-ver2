@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>店舗データグラフ</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="CSS/style.css">
+    <link rel="stylesheet" href="CSS/header.css">
+</head>
+<body>
+<header class="header-3">
+  <div class="header-inner">
+    <div class="logo">
+      <h1>まいばすけっと既存店PLアプリ</h1>
+    </div>
+    <nav class="header-nav">
+      <div class="header-nav-item">
+          <!-- ログアウトボタンをクリックした際にlogout関数を実行 -->
+          <a class="header-button header-post" href="#" onclick="logout()">ログアウト</a>
+      </div>
+  </nav>
+  </div>
+</header>
+<main>
+<h2>店舗データグラフ</h2>
+    <p>閲覧可能店舗:<span id="storelist"></span></p>
+    <label for="storeName">店舗名:</label>
+    <input type="text" id="storeName" placeholder="店舗名を入力">
+    <button id="searchButton">検索</button>
+<h2>店舗データグラフ | <span id="name"></span></h2>
+    <canvas id="salesChart"></canvas>
+    <canvas id="salesCountChart"></canvas>
+    <canvas id="customerPriceChart"></canvas>
+    <canvas id="customerCountChart"></canvas>
+</main> 
+<script type="module">
+// Firebase SDKをインポート
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+// Firebaseの初期化
+const firebaseConfig = {
+    apiKey: "AIzaSyAtBYcqb7uEMK7r0O0Q6l3LNZAow29-ZzI",
+    authDomain: "test-969a3.firebaseapp.com",
+    projectId: "test-969a3",
+    storageBucket: "test-969a3.firebasestorage.app",
+    messagingSenderId: "370599779966",
+    appId: "1:370599779966:web:53792e9cf604cf09b4022f"
+};
+
+// Firebaseの初期化
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ログインユーザーのメールを取得
+let userEmail = localStorage.getItem("loggedInUser");
+if (!userEmail) {
+    alert("ログインが必要です。");
+    window.location.href = "index.html";
+}
+
+let authorizedStores = [];
+
+// **ログインユーザーに許可された店舗を取得**
+async function getAuthorizedStores(email) {
+    const mailDBCollection = collection(db, "mailDB");
+    const q = query(mailDBCollection, where("メールアドレス", "==", email));
+    const querySnapshot = await getDocs(q);
+
+    let stores = [];
+    querySnapshot.forEach((doc) => {
+        stores.push(doc.data().店名);
+    });
+
+    console.log("許可された店舗:", stores);
+    document.getElementById("storelist").textContent = stores;
+    return stores;
+}
+
+// **認証ユーザーの店舗を取得**
+(async () => {
+    authorizedStores = await getAuthorizedStores(userEmail);
+})();
+
+// **検索ボタンのクリックイベント**
+document.getElementById("searchButton").addEventListener("click", async () => {
+    const storeName = document.getElementById("storeName").value.trim(); 
+    if (!storeName) {
+        alert("店舗名を入力してください。");
+        return;
+    }
+
+    if (!authorizedStores.includes(storeName)) {
+        alert("店舗データは権限外です。");
+        return;
+    }
+
+    // 入力された店舗名を <h2> に反映
+    document.getElementById("name").textContent = storeName;
+
+    try {
+        const monthlyData = await getMonthlyPLData(storeName);
+        renderGraph(storeName, monthlyData);  // グラフを描画
+    } catch (error) {
+        console.error("データ取得エラー:", error);
+    }
+});
+
+async function getMonthlyPLData(storeName) {
+    const testDBCollection = collection(db, "testDB");
+    const q = query(testDBCollection, where("店名", "==", storeName));  // 店舗名でフィルタリング
+    const querySnapshot = await getDocs(q);
+
+    let monthlyData = {};
+
+    // データが取得できているか確認
+    if (querySnapshot.empty) {
+        console.error("データが見つかりませんでした。");
+        return monthlyData;  // データがない場合は空のオブジェクトを返す
+    }
+
+    querySnapshot.forEach(doc => {
+        const data = doc.data();
+        const month = data.月度; // 月度でグループ化
+
+        // 月度別データを整理
+        if (!monthlyData[month]) {
+            monthlyData[month] = {
+                売上年換算: data.売上年換算,
+                客単価: data.客単価,
+                客数: data.累計客数,
+                売上: data.累計日販,
+                買上点数: data.買上点数,
+                店名: data.店名
+            };
+        }
+    });
+
+    console.log("取得したデータ: ", monthlyData);  // 取得したデータを確認
+
+    return monthlyData;
+}
+
+// 年月を正しくソートするために、"YYYY年MM月" 形式のキーを使って昇順にソート
+function sortMonths(months) {
+    return months.sort((a, b) => {
+        const aYearMonth = a.match(/(\d{4})年(\d{1,2})月/);  // "2023年10月" → [ "2023年10月", "2023", "10" ]
+        const bYearMonth = b.match(/(\d{4})年(\d{1,2})月/);
+
+        const aYear = parseInt(aYearMonth[1], 10);
+        const bYear = parseInt(bYearMonth[1], 10);
+        const aMonth = parseInt(aYearMonth[2], 10);
+        const bMonth = parseInt(bYearMonth[2], 10);
+
+        // 年が異なれば年で比較、年が同じなら月で比較（昇順）
+        if (aYear !== bYear) {
+            return aYear - bYear;  // 年で昇順
+        } else {
+            return aMonth - bMonth;  // 月で昇順
+        }
+    });
+}
+
+// グラフを描画する関数
+function renderGraph(storeName, monthlyData) {
+    const months = [];
+    const salesData = [];
+    const customerPriceData = [];
+    const customerCountData = [];
+    const salesCountData = [];
+
+    // 月度（YYYY年MM月形式）を取り出して昇順に並べる
+    const sortedMonths = sortMonths(Object.keys(monthlyData));
+
+    // 月度を並び替えて格納
+    sortedMonths.forEach(month => {
+        if (monthlyData[month]) {  // データがある場合のみ処理
+            months.push(month);  // 月度を格納
+            salesData.push(monthlyData[month].売上年換算);  // 売上年換算
+            customerPriceData.push(monthlyData[month].客単価);  // 客単価
+            customerCountData.push(monthlyData[month].客数);  // 客数
+            salesCountData.push(monthlyData[month].売上);  // 売上
+        }
+    });
+
+    // 売上年換算グラフの描画
+    const salesChartData = {
+        labels: months,  // 月度
+        datasets: [{
+            label: '売上年換算',
+            data: salesData,  // 売上年換算データ
+            borderColor: 'rgba(75, 192, 192, 1)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            fill: true,
+            tension: 0.1
+        }]
+    };
+
+    const salesChartConfig = {
+        type: 'line',
+        data: salesChartData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: { title: { display: true, text: '月度' } },
+                y: { title: { display: true, text: '売上年換算' } }
+            }
+        }
+    };
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    new Chart(salesCtx, salesChartConfig);
+
+    // 客単価グラフの描画
+    const customerPriceChartData = {
+        labels: months,  // 月度
+        datasets: [{
+            label: '客単価',
+            data: customerPriceData,  // 客単価データ
+            borderColor: 'rgba(153, 102, 255, 1)',
+            backgroundColor: 'rgba(153, 102, 255, 0.2)',
+            fill: true,
+            tension: 0.1
+        }]
+    };
+
+    const customerPriceChartConfig = {
+        type: 'line',
+        data: customerPriceChartData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: { title: { display: true, text: '月度' } },
+                y: { title: { display: true, text: '客単価' } }
+            }
+        }
+    };
+    const customerPriceCtx = document.getElementById('customerPriceChart').getContext('2d');
+    new Chart(customerPriceCtx, customerPriceChartConfig);
+
+    // 客数グラフの描画
+    const customerCountChartData = {
+        labels: months,  // 月度
+        datasets: [{
+            label: '客数',
+            data: customerCountData,  // 客数データ
+            borderColor: 'rgba(255, 159, 64, 1)',
+            backgroundColor: 'rgba(255, 159, 64, 0.2)',
+            fill: true,
+            tension: 0.1
+        }]
+    };
+
+    const customerCountChartConfig = {
+        type: 'line',
+        data: customerCountChartData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: { title: { display: true, text: '月度' } },
+                y: { title: { display: true, text: '客数' } }
+            }
+        }
+    };
+    const customerCountCtx = document.getElementById('customerCountChart').getContext('2d');
+    new Chart(customerCountCtx, customerCountChartConfig);
+
+    // 売上グラフの描画
+    const salesCountChartData = {
+        labels: months,  // 月度
+        datasets: [{
+            label: '売上',
+            data: salesCountData,  // 売上データ
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            fill: true,
+            tension: 0.1
+        }]
+    };
+
+    const salesCountChartConfig = {
+        type: 'line',
+        data: salesCountChartData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: { title: { display: true, text: '月度' } },
+                y: { title: { display: true, text: '売上' } }
+            }
+        }
+    };
+    const salesCountCtx = document.getElementById('salesCountChart').getContext('2d');
+    new Chart(salesCountCtx, salesCountChartConfig);
+}
+
+</script>
+<script src="js/logout.js" defer></script>
+</body>
+</html>

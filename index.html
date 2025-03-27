@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン - 既存店PLシステム</title>
+    <link rel="stylesheet" href="CSS/style.css">
+    <link rel="stylesheet" href="CSS/header.css">
+</head>
+<body>
+<header class="header-3">
+  <div class="header-inner">
+    <div class="logo">
+      <h1>まいばすけっと既存店PLアプリ</h1>
+    </div>
+    <nav class="header-nav">
+      <div class="header-nav-item">
+      </div>
+    </nav>
+  </div>
+</header>
+<main>
+    <section>
+        <h2>ログイン</h2>
+        <input type="email" id="email" placeholder="メールアドレス" required>
+        <input type="password" id="password" placeholder="パスワード" required>
+        <button id="loginToPltableBtn">既存店PL表へログイン</button>
+        <button id="loginToGraphBtn">グラフページへログイン</button>
+    </section>
+</main>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAtBYcqb7uEMK7r0O0Q6l3LNZAow29-ZzI",
+      authDomain: "test-969a3.firebaseapp.com",
+      projectId: "test-969a3",
+      storageBucket: "test-969a3.firebasestorage.app",
+      messagingSenderId: "370599779966",
+      appId: "1:370599779966:web:53792e9cf604cf09b4022f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ログイン処理（Firestore内の `mailDB` をチェック）
+    async function login(page) {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        // `mailDB` から入力されたメールアドレスを検索
+        const q = query(collection(db, "mailDB"), where("メールアドレス", "==", email));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            alert("メールアドレスが見つかりません");
+            return;
+        }
+
+        let userData = null;
+        querySnapshot.forEach((doc) => {
+            userData = doc.data();
+        });
+
+        // Firestore内のパスワードと入力されたパスワードを照合
+        if (userData && userData["パスワード"] === password) {
+            console.log("ログイン成功:", userData);
+
+            localStorage.setItem("loggedInUser", email);
+
+            // ロールやページに応じて遷移先を制御
+            if (page === "graph") {
+                // graph.html への遷移
+                alert("グラフページへ遷移します");
+                window.location.href = "graph.html";
+            } else if (page === "pltable") {
+                // pltable.html への遷移
+                alert("既存店PL表へ遷移します");
+                window.location.href = "pltable.html";
+            }
+        } else {
+            alert("パスワードが間違っています");
+        }
+    }
+
+    // ボタンに対応するログイン呼び出し
+    function loginToGraph() {
+        login("graph");
+    }
+
+    function loginToPltable() {
+        login("pltable");
+    }
+    // それぞれのボタンのクリックイベントに関数を設定
+    window.onload = function () {
+        document.getElementById("loginToGraphBtn").onclick = loginToGraph;
+        document.getElementById("loginToPltableBtn").onclick = loginToPltable;
+    };
+</script>
+</body>
+</html>

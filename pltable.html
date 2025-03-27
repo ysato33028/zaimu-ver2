@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>既存店PL表</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="CSS/style.css">
+    <link rel="stylesheet" href="CSS/header.css">
+</head>
+<body>
+<header class="header-3">
+  <div class="header-inner">
+    <div class="logo">
+      <h1>まいばすけっと既存店PLアプリ</h1>
+    </div>
+    <nav class="header-nav">
+      <div class="header-nav-item">
+          <!-- ログアウトボタンをクリックした際にlogout関数を実行 -->
+          <a class="header-button header-post" href="#" onclick="logout()">ログアウト</a>
+      </div>
+  </nav>
+  </div>
+</header>
+<main>
+<p>閲覧可能店舗:<span id="storelist"></span></p>
+<!-- 店舗名入力フォーム -->
+<label for="storeName">店舗名:</label>
+<input type="text" id="storeName" placeholder="店名を入力">
+<button id="searchButton">検索</button>
+<div id="pdf-content">
+<h2>既存店PL表 | <span id="name"></span></h2>
+  <!-- 一日当り実績 -->
+  <table id="pldayTable">
+    <thead class="pltabal-header">
+      <tr class="double-row">
+        <th colspan="4"></th>
+        <th>当月度</th>
+        <th>予算</th>
+        <th>予算差</th>
+        <th>前年比</th>
+        <th>前月比</th>
+        <td class="pltabal-space"></td>
+        <th>9月度</th>
+        <th>8月度</th>
+        <th>7月度</th>
+        <th>6月度</th>
+        <th>5月度</th>
+        <th>4月度</th>
+        <th>3月度</th>
+        <th>2月度</th>
+        <th>1月度</th>
+        <th>12月度</th>
+        <th>11月度</th>
+        <th>10月度</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- データがここに追加されます -->
+      <tr>
+        <td class="vertical-text" rowspan="10">
+          <svg width="20" height="150">
+            <text x="10" y="10" writing-mode="tb" font-size="16px">一日当り実績</text>
+          </svg>
+        </td>
+      </tr>
+      <tr>
+        <td class="pltabal-boldItem" colspan="3">売上(千円）</td>
+        <td id="salesCell"></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td rowspan="10"></td>
+        <td class="sales-data"></td>
+        <td class="sales-data"></td>
+        <td class="sales-data"></td>
+        <td class="sales-data"></td>
+        <td class="sales-data"></td>
+        <td class="sales-data"></td>
+        <td class="sales-data"></td>
+        <td class="sales-data"></td>
+        <td class="sales-data"></td>
+        <td class="sales-data"></td>
+        <td class="sales-data"></td>
+        <td class="sales-data"></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">客数（人）</td>
+        <td id="customerCountCell"></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td class="customer-data"></td>
+        <td class="customer-data"></td>
+        <td class="customer-data"></td>
+        <td class="customer-data"></td>
+        <td class="customer-data"></td>
+        <td class="customer-data"></td>
+        <td class="customer-data"></td>
+        <td class="customer-data"></td>
+        <td class="customer-data"></td>
+        <td class="customer-data"></td>
+        <td class="customer-data"></td>
+        <td class="customer-data"></td>
+      </tr>
+      <tr>
+        <td class="pltabal-boldItem" colspan="3">客単価（円）</td>
+        <td id="unitPriceCell"></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td class="unitprice-data"></td>
+        <td class="unitprice-data"></td>
+        <td class="unitprice-data"></td>
+        <td class="unitprice-data"></td>
+        <td class="unitprice-data"></td>
+        <td class="unitprice-data"></td>
+        <td class="unitprice-data"></td>
+        <td class="unitprice-data"></td>
+        <td class="unitprice-data"></td>
+        <td class="unitprice-data"></td>
+        <td class="unitprice-data"></td>
+        <td class="unitprice-data"></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">客当点数</td>
+        <td id="itemsPerCustomerCell"></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td class="itemspercustomer-data"></td>
+        <td class="itemspercustomer-data"></td>
+        <td class="itemspercustomer-data"></td>
+        <td class="itemspercustomer-data"></td>
+        <td class="itemspercustomer-data"></td>
+        <td class="itemspercustomer-data"></td>
+        <td class="itemspercustomer-data"></td>
+        <td class="itemspercustomer-data"></td>
+        <td class="itemspercustomer-data"></td>
+        <td class="itemspercustomer-data"></td>
+        <td class="itemspercustomer-data"></td>
+        <td class="itemspercustomer-data"></td>
+      </tr>
+      <tr class="pltabal-attention">
+        <td class="pltabal-boldItem" colspan="3">１点当り単価</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">廃棄売変（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">売変合計（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">合計人時（時間）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr class="double-row">
+        <td class="pltabal-item"></td>
+        <td class="pltabal-item" colspan="2">CO人時（時間）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="vertical-text" rowspan="17">
+          <svg width="20" height="150">
+            <text x="10" y="10" writing-mode="tb" font-size="16px">経費明細</text>
+          </svg>
+        </td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">総売上高（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td rowspan="22"></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">直営荒利高（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">リベート合計（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">販管費合計（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">人件費合計（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" rowspan="2"></td>
+        <td class="pltabal-item" colspan="2">フレックス等給料計（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item"></td>
+        <td class="pltabal-item">人材派遣費用（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" rowspan="2"></td>
+        <td class="pltabal-item" colspan="2">社員給料合計（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item"></td>
+        <td class="pltabal-item">時間外給料（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">販促費合計（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">水道光熱費（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">地代家賃（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">減価償却費（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">営業利益（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="pltabal-item" colspan="3">本部経費込営業利益（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr class="double-row">
+        <td class="pltabal-item" colspan="3">レジ現金・過不足（千円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="vertical-text" rowspan="6">
+        <svg width="20" height="150">
+            <text x="10" y="10" writing-mode="tb" font-size="16px">指標</text>
+          </svg>
+        </td>
+      </tr>
+      <tr class="pltabal-attention">
+        <td class="pltabal-boldItem" colspan="3">人時売上（円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr class="pltabal-attention">
+        <td class="pltabal-boldItem" colspan="3">人時荒利（円）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr class="pltabal-attention">
+        <td class="pltabal-boldItem" colspan="3">荒利益率（％）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr class="pltabal-attention">
+        <td class="pltabal-boldItem" colspan="3">労働分配率（％）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr class="pltabal-attention">
+        <td class="pltabal-boldItem" colspan="3">売変率（％）</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table><br>
+</div><br>
+<button id="pdf-button">PDF生成</button>
+</main>
+<script type="module">
+// Firebase SDKをインポート
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, setDoc, doc, getDoc, deleteDoc, collectionGroup } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+// Firebaseの初期化
+const firebaseConfig = {
+  apiKey: "AIzaSyAtBYcqb7uEMK7r0O0Q6l3LNZAow29-ZzI",
+  authDomain: "test-969a3.firebaseapp.com",
+  projectId: "test-969a3",
+  storageBucket: "test-969a3.firebasestorage.app",
+  messagingSenderId: "370599779966",
+  appId: "1:370599779966:web:53792e9cf604cf09b4022f"
+};
+
+// Firebaseの初期化
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ログインユーザーのメールを取得
+let userEmail = localStorage.getItem("loggedInUser");
+if (!userEmail) {
+    alert("ログインが必要です。");
+    window.location.href = "index.html";
+}
+
+let authorizedStores = [];
+
+// **ログインユーザーに許可された店舗を取得**
+async function getAuthorizedStores(email) {
+    const mailDBCollection = collection(db, "mailDB");
+    const q = query(mailDBCollection, where("メールアドレス", "==", email));
+    const querySnapshot = await getDocs(q);
+
+    let stores = [];
+    querySnapshot.forEach((doc) => {
+        stores.push(doc.data().店名);
+    });
+
+    console.log("許可された店舗:", stores);
+    document.getElementById("storelist").textContent = stores;
+    return stores;
+}
+
+// **認証ユーザーの店舗を取得**
+(async () => {
+    authorizedStores = await getAuthorizedStores(userEmail);
+})();
+
+// **検索ボタンのクリックイベント**
+document.getElementById("searchButton").addEventListener("click", async () => {
+    const storeName = document.getElementById("storeName").value.trim(); 
+    if (!storeName) {
+        alert("店舗名を入力してください。");
+        return;
+    }
+
+    if (!authorizedStores.includes(storeName)) {
+        alert("店舗データは権限外です。");
+        return;
+    }
+
+    // 入力された店舗名を <h2> に反映
+    document.getElementById("name").textContent = storeName;
+
+    try {
+        const monthlyData = await getMonthlyPLData(storeName);
+        displayPLDayTable(monthlyData);
+    } catch (error) {
+        console.error("データ取得エラー:", error);
+    }
+});
+
+async function getMonthlyPLData(storeName) {
+    const testDBCollection = collection(db, "testDB");
+    const q = query(testDBCollection, where("店名", "==", storeName));  // 店舗名でフィルタリング
+    const querySnapshot = await getDocs(q);
+
+    let monthlyData = {};
+
+    // データが取得できているか確認
+    if (querySnapshot.empty) {
+        console.error("データが見つかりませんでした。");
+        return monthlyData;  // データがない場合は空のオブジェクトを返す
+    }
+
+    querySnapshot.forEach(doc => {
+        const data = doc.data();
+        const month = data.月度; // 月度でグループ化
+
+        // 月度別データを整理
+        if (!monthlyData[month]) {
+            monthlyData[month] = {
+                売上年換算: data.売上年換算,
+                客単価: data.客単価,
+                客数: data.累計客数,
+                売上: data.累計日販,
+                買上点数: data.買上点数,
+                店名: data.店名
+            };
+        }
+    });
+
+    console.log("取得したデータ: ", monthlyData);  // 取得したデータを確認
+
+    return monthlyData;
+}
+
+function updateHeader(monthlyData) {
+    // 月度ヘッダー部分を動的に更新
+    const headerCells = document.querySelectorAll('.pltabal-header th');
+    const months = Object.keys(monthlyData).sort((a, b) => {
+        const aYearMonth = a.match(/(\d{4})年(\d{1,2})月/);  // 年と月を分ける
+        const bYearMonth = b.match(/(\d{4})年(\d{1,2})月/);
+        
+        const aYear = parseInt(aYearMonth[1], 10);
+        const aMonth = parseInt(aYearMonth[2], 10);
+        const bYear = parseInt(bYearMonth[1], 10);
+        const bMonth = parseInt(bYearMonth[2], 10);
+        
+        // 年月を降順でソート
+        if (aYear !== bYear) {
+            return bYear - aYear;  // 年が違う場合は年でソート
+        } else {
+            return bMonth - aMonth;  // 同じ年なら月でソート
+        }
+    });
+
+    let displayedMonths = [];  // すでに表示された月度を追跡する配列
+
+    // 最大12ヶ月分を表示
+    for (let i = 0; i < 12; i++) {
+        if (months[i]) {
+            const month = months[i + 1];  // 年を除外して月度だけ表示
+
+            // 重複しない月度だけを表示
+            if (!displayedMonths.includes(month)) {
+                headerCells[i + 6].textContent = month;  // セル6からスタートして月度を設定
+                displayedMonths.push(month);  // 追加された月度を記録
+            }
+        } else {
+            headerCells[i + 6].textContent = "-";  // データがない場合は "-" を表示
+        }
+    }
+}
+
+
+function displayPLDayTable(monthlyData) {
+    const tableBody = document.querySelector('#pldayTable tbody');
+
+    // 年月を正しくソートするために、"YYYY年MM月" 形式のキーを使ってソート
+    const sortedMonths = Object.keys(monthlyData).sort((a, b) => {
+        const aYearMonth = a.match(/(\d{4})年(\d{1,2})月/); // "2024年12月" → [ "2024年12月", "2024", "12" ]
+        const bYearMonth = b.match(/(\d{4})年(\d{1,2})月/);
+
+        const aYear = parseInt(aYearMonth[1], 10);
+        const bYear = parseInt(bYearMonth[1], 10);
+        const aMonth = parseInt(aYearMonth[2], 10);
+        const bMonth = parseInt(bYearMonth[2], 10);
+
+        // 年が異なれば年で比較、年が同じなら月で比較
+        if (aYear !== bYear) {
+            return bYear - aYear;  // 降順
+        } else {
+            return bMonth - aMonth;  // 月で降順
+        }
+    });
+
+    // 最新月のデータを '当月度' セルに表示
+    const latestMonth = sortedMonths[0]; // 最新月を取得
+    const salesCell = document.getElementById("salesCell");　// 売上のセル
+    const customerCountCell = document.getElementById("customerCountCell"); // 客数のセル
+    const unitPriceCell = document.getElementById("unitPriceCell"); // 客単価のセル
+    const itemsPerCustomerCell = document.getElementById("itemsPerCustomerCell"); // 買上点数のセル
+
+    if (monthlyData[latestMonth]) {
+        salesCell.innerHTML = formatData(monthlyData[latestMonth], '売上');  // 売上(千円)の表示
+        customerCountCell.innerHTML = formatData(monthlyData[latestMonth], '客数');  // 客数の表示
+        unitPriceCell.innerHTML = formatData(monthlyData[latestMonth], '客単価');  // 客単価の表示
+        const itemsValue = parseFloat(monthlyData[latestMonth]['買上点数']);
+        itemsPerCustomerCell.innerHTML = !isNaN(itemsValue) ? itemsValue.toFixed(2) : '-';
+    } else {
+        salesCell.innerHTML = '-';  // データがない場合は '-'
+        customerCountCell.innerHTML = '-';
+        unitPriceCell.innerHTML = '-';
+        itemsPerCustomerCell.innerHTML = '-';
+    }
+
+    // 月度に関連する "売上" のセル（9月度～1月度）
+    const salesCells = document.querySelectorAll('td.sales-data'); 
+    // 月度に関連する "客数" のセル（9月度～1月度）
+    const customerCells = document.querySelectorAll('td.customer-data'); 
+    // 月度に関連する "客単価" のセル（9月度～1月度）
+    const unitPriceCells = document.querySelectorAll('td.unitprice-data'); 
+    // 月度に関連する "買上点数" のセル（9月度～1月度）
+    const itemsPerCustomerCells = document.querySelectorAll('td.itemspercustomer-data'); 
+
+    // 売上データを各月度セルに表示
+    salesCells.forEach((cell, index) => {
+        const month = sortedMonths[index + 1]; // 最新月から順に過去の月を取得
+        if (month && monthlyData[month]) {
+            cell.innerHTML = formatData(monthlyData[month], '売上');  
+        } else {
+            cell.innerHTML = '-';
+        }
+    });
+
+    // 客数データを各月度セルに表示
+    customerCells.forEach((cell, index) => {
+        const month = sortedMonths[index + 1]; // 最新月から順に過去の月を取得
+        if (month && monthlyData[month]) {
+            cell.innerHTML = formatData(monthlyData[month], '客数');  
+        } else {
+            cell.innerHTML = '-';
+        }
+    });
+
+    // 客単価データを各月度セルに表示
+    unitPriceCells.forEach((cell, index) => {
+        const month = sortedMonths[index + 1]; // 最新月から順に過去の月を取得
+        if (month && monthlyData[month]) {
+            cell.innerHTML = formatData(monthlyData[month], '客単価');  
+        } else {
+            cell.innerHTML = '-';
+        }
+    });
+
+    // 買上点数データを各月度セルに表示
+    itemsPerCustomerCells.forEach((cell, index) => {
+        const month = sortedMonths[index + 1]; // 最新月から順に過去の月を取得
+        if (month && monthlyData[month]) {
+            const itemsValue = parseFloat(monthlyData[month]['買上点数']);
+            cell.innerHTML = !isNaN(itemsValue) ? itemsValue.toFixed(2) : '-';
+        } else {
+            cell.innerHTML = '-';
+        }
+    });
+}
+
+// データのフォーマット関数（数値を整形）
+function formatData(monthData, item) {
+    if (!monthData || !monthData[item]) return '-';  // データがない場合は '-' を返す
+    return Math.round(monthData[item]).toLocaleString();
+}
+
+
+// イベントリスナーでデータを取得して表示
+document.getElementById("searchButton").addEventListener("click", async () => {
+    const storeName = document.getElementById("storeName").value.trim(); 
+    if (!storeName) {
+        alert("店舗名を入力してください。");
+        return;
+    }
+
+    try {
+        const monthlyData = await getMonthlyPLData(storeName);
+        updateHeader(monthlyData);  // ヘッダーを更新
+        displayPLDayTable(monthlyData); // 表示関数を呼び出し
+    } catch (error) {
+        console.error("データ取得エラー:", error);
+    }
+});
+
+
+
+// PDFに変換
+document.getElementById("pdf-button").addEventListener("click", async () => {
+    const { jsPDF } = window.jspdf;
+    const name = document.getElementById("name").textContent || "";
+
+    try {
+        const content = document.getElementById("pdf-content");
+        const pdf = new jsPDF({
+            orientation: "portrait",
+            unit: "px",
+            format: "a4",
+        });
+
+        // PDFページの寸法を取得
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        // 余白の設定（単位はpx）
+        const margin = 20; // 左右および上下の余白を統一
+
+        // 有効なコンテンツ領域を計算
+        const contentWidth = pageWidth - margin * 2;
+        const contentHeight = pageHeight - margin * 2;
+
+        // html2canvasでCanvasを作成
+        const canvas = await html2canvas(content, {
+            scrollY: -window.scrollY,
+            scale: 2, // 高解像度で描画
+        });
+
+        const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
+        // Canvasのサイズを取得
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+         // スケールを計算
+        const scale = Math.min(contentWidth / canvasWidth, contentHeight / canvasHeight);
+
+        const imgWidth = canvasWidth * scale;
+        const imgHeight = canvasHeight * scale;
+
+        // 画像をPDFに追加
+        pdf.addImage(imgData, "JPEG", margin, margin, imgWidth, imgHeight);
+
+        pdf.save(`【${name}】既存店PL表.pdf`);
+    } catch (error) {
+        console.error("PDF生成エラー:", error);
+        alert("PDF生成中にエラーが発生しました。詳細をコンソールで確認してください。");
+    }
+});
+
+</script>
+<script src="js/logout.js" defer></script>
+</body>
+</html>
