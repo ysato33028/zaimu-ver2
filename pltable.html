@@ -749,7 +749,6 @@ document.getElementById("searchButton").addEventListener("click", async () => {
     }
 
     if (!authorizedStores.includes(storeName)) {
-        alert("店舗データは権限外です。");
         return;
     }
 
@@ -765,6 +764,12 @@ document.getElementById("searchButton").addEventListener("click", async () => {
 });
 
 async function getMonthlyPLData(storeName) {
+    // **権限外の店舗データを除外**
+    if (!authorizedStores.includes(storeName)) {
+        alert("権限外の店舗です。");
+        return {};
+    }
+
     const testDBCollection = collection(db, "testDB");
     const q = query(testDBCollection, where("店名", "==", storeName));  // 店舗名でフィルタリング
     const querySnapshot = await getDocs(q);
