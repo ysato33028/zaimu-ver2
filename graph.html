@@ -92,7 +92,7 @@ document.getElementById("searchButton").addEventListener("click", async () => {
     }
 
     if (!authorizedStores.includes(storeName)) {
-        alert("店舗データは権限外です。");
+        alert("権限外の店舗です。");
         return;
     }
 
@@ -108,6 +108,12 @@ document.getElementById("searchButton").addEventListener("click", async () => {
 });
 
 async function getMonthlyPLData(storeName) {
+    // **権限外の店舗データを除外**
+    if (!authorizedStores.includes(storeName)) {
+        alert("権限外の店舗です。");
+        return {};
+    }
+
     const testDBCollection = collection(db, "testDB");
     const q = query(testDBCollection, where("店名", "==", storeName));  // 店舗名でフィルタリング
     const querySnapshot = await getDocs(q);
@@ -163,6 +169,8 @@ function sortMonths(months) {
 }
 
 // グラフを描画する関数
+let chartInstances = {};
+
 function renderGraph(storeName, monthlyData) {
     const months = [];
     const salesData = [];
@@ -170,144 +178,59 @@ function renderGraph(storeName, monthlyData) {
     const customerCountData = [];
     const salesCountData = [];
 
-    // 月度（YYYY年MM月形式）を取り出して昇順に並べる
     const sortedMonths = sortMonths(Object.keys(monthlyData));
 
-    // 月度を並び替えて格納
     sortedMonths.forEach(month => {
-        if (monthlyData[month]) {  // データがある場合のみ処理
-            months.push(month);  // 月度を格納
-            salesData.push(monthlyData[month].売上年換算);  // 売上年換算
-            customerPriceData.push(monthlyData[month].客単価);  // 客単価
-            customerCountData.push(monthlyData[month].客数);  // 客数
-            salesCountData.push(monthlyData[month].売上);  // 売上
+        if (monthlyData[month]) {
+            months.push(month);
+            salesData.push(monthlyData[month].売上年換算);
+            customerPriceData.push(monthlyData[month].客単価);
+            customerCountData.push(monthlyData[month].客数);
+            salesCountData.push(monthlyData[month].売上);
         }
     });
 
-    // 売上年換算グラフの描画
-    const salesChartData = {
-        labels: months,  // 月度
-        datasets: [{
-            label: '売上年換算',
-            data: salesData,  // 売上年換算データ
-            borderColor: 'rgba(75, 192, 192, 1)',
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            fill: true,
-            tension: 0.1
-        }]
+    const chartConfigs = {
+        salesChart: { label: '売上年換算', data: salesData, color: 'rgba(75, 192, 192, 1)' },
+        customerPriceChart: { label: '客単価', data: customerPriceData, color: 'rgba(153, 102, 255, 1)' },
+        customerCountChart: { label: '客数', data: customerCountData, color: 'rgba(255, 159, 64, 1)' },
+        salesCountChart: { label: '売上', data: salesCountData, color: 'rgba(255, 99, 132, 1)' }
     };
 
-    const salesChartConfig = {
-        type: 'line',
-        data: salesChartData,
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: { mode: 'index', intersect: false }
-            },
-            scales: {
-                x: { title: { display: true, text: '月度' } },
-                y: { title: { display: true, text: '売上年換算' } }
-            }
+    Object.keys(chartConfigs).forEach(chartId => {
+        if (chartInstances[chartId]) {
+            chartInstances[chartId].destroy();
         }
-    };
-    const salesCtx = document.getElementById('salesChart').getContext('2d');
-    new Chart(salesCtx, salesChartConfig);
 
-    // 客単価グラフの描画
-    const customerPriceChartData = {
-        labels: months,  // 月度
-        datasets: [{
-            label: '客単価',
-            data: customerPriceData,  // 客単価データ
-            borderColor: 'rgba(153, 102, 255, 1)',
-            backgroundColor: 'rgba(153, 102, 255, 0.2)',
-            fill: true,
-            tension: 0.1
-        }]
-    };
-
-    const customerPriceChartConfig = {
-        type: 'line',
-        data: customerPriceChartData,
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: { mode: 'index', intersect: false }
+        const ctx = document.getElementById(chartId).getContext('2d');
+        chartInstances[chartId] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: chartConfigs[chartId].label,
+                    data: chartConfigs[chartId].data,
+                    borderColor: chartConfigs[chartId].color,
+                    backgroundColor: chartConfigs[chartId].color.replace('1)', '0.2)'),
+                    fill: true,
+                    tension: 0.1
+                }]
             },
-            scales: {
-                x: { title: { display: true, text: '月度' } },
-                y: { title: { display: true, text: '客単価' } }
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    x: { title: { display: true, text: '月度' } },
+                    y: { title: { display: true, text: chartConfigs[chartId].label } }
+                }
             }
-        }
-    };
-    const customerPriceCtx = document.getElementById('customerPriceChart').getContext('2d');
-    new Chart(customerPriceCtx, customerPriceChartConfig);
-
-    // 客数グラフの描画
-    const customerCountChartData = {
-        labels: months,  // 月度
-        datasets: [{
-            label: '客数',
-            data: customerCountData,  // 客数データ
-            borderColor: 'rgba(255, 159, 64, 1)',
-            backgroundColor: 'rgba(255, 159, 64, 0.2)',
-            fill: true,
-            tension: 0.1
-        }]
-    };
-
-    const customerCountChartConfig = {
-        type: 'line',
-        data: customerCountChartData,
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: { mode: 'index', intersect: false }
-            },
-            scales: {
-                x: { title: { display: true, text: '月度' } },
-                y: { title: { display: true, text: '客数' } }
-            }
-        }
-    };
-    const customerCountCtx = document.getElementById('customerCountChart').getContext('2d');
-    new Chart(customerCountCtx, customerCountChartConfig);
-
-    // 売上グラフの描画
-    const salesCountChartData = {
-        labels: months,  // 月度
-        datasets: [{
-            label: '売上',
-            data: salesCountData,  // 売上データ
-            borderColor: 'rgba(255, 99, 132, 1)',
-            backgroundColor: 'rgba(255, 99, 132, 0.2)',
-            fill: true,
-            tension: 0.1
-        }]
-    };
-
-    const salesCountChartConfig = {
-        type: 'line',
-        data: salesCountChartData,
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: { mode: 'index', intersect: false }
-            },
-            scales: {
-                x: { title: { display: true, text: '月度' } },
-                y: { title: { display: true, text: '売上' } }
-            }
-        }
-    };
-    const salesCountCtx = document.getElementById('salesCountChart').getContext('2d');
-    new Chart(salesCountCtx, salesCountChartConfig);
+        });
+    });
 }
+
 
 </script>
 <script src="js/logout.js" defer></script>
